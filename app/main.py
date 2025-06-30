@@ -1,5 +1,3 @@
-# app/main.py
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,6 +8,7 @@ from app.api.upload_cf import router as upload_cf_router
 from app.api.history import router as history_router
 from app.api.agent import router as agent_router
 from app.api.search import router as search_router
+from app.api.cf import router as cf_router  # <-- Новый cf-роутер
 
 app = FastAPI(title="AI1C Backend")
 
@@ -29,3 +28,4 @@ app.include_router(upload_cf_router)
 app.include_router(history_router)
 app.include_router(agent_router)
 app.include_router(search_router)
+app.include_router(cf_router)  # <-- Добавили cf-роутер
