@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
 
-from pydantic import BaseModel  # <-- ВАЖНО! Добавлен импорт
+from pydantic import BaseModel
 
 from app.core.config import settings
 from app.api.auth import get_current_user
@@ -14,15 +14,15 @@ from app.db.models.document import Document
 from app.db.models.knowledge import Knowledge
 from app.db.models.embedding import Embedding
 
-import httpx
+from sentence_transformers import SentenceTransformer
 
 router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
+model = SentenceTransformer("all-MiniLM-L6-v2")  # локально
 
 class DocumentOut(BaseModel):
     id: int
     name: str
     uploaded_at: datetime
-
     class Config:
         from_attributes = True
 
@@ -50,10 +50,10 @@ async def upload_document(
     if not text.strip():
         raise HTTPException(status_code=400, detail="Не удалось прочитать текст документа.")
 
-    # Простейший split, дальше усложним
+    # Простейший split
     chunks = [chunk.strip() for chunk in text.split("\n\n") if chunk.strip()]
     if not chunks:
-        chunks = [text]  # fallback
+        chunks = [text]
 
     for idx, chunk in enumerate(chunks):
         # 1. Сохраняем chunk в Knowledge
@@ -66,30 +66,13 @@ async def upload_document(
         db.commit()
         db.refresh(k)
 
-        # 2. Вызываем DeepSeek для эмбеддинга
-        try:
-            async with httpx.AsyncClient(timeout=30) as client:
-                response = await client.post(
-                    f"{settings.deepseek_api_base_url}/embeddings",
-                    headers={
-                        "Authorization": f"Bearer {settings.deepseek_api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": settings.deepseek_embedding_model,
-                        "input": chunk,
-                    }
-                )
-                response.raise_for_status()
-                result = response.json()
-            embedding_vector = result["data"][0]["embedding"]
-            emb = Embedding(
-                document_id=doc.id,
-                vector=embedding_vector
-            )
-            db.add(emb)
-            db.commit()
-        except Exception as e:
-            print(f"Ошибка при генерации embedding: {e}")
+        # 2. Локально считаем эмбеддинг через SentenceTransformers
+        embedding_vector = model.encode([chunk])[0].tolist()
+        emb = Embedding(
+            document_id=doc.id,
+            vector=embedding_vector
+        )
+        db.add(emb)
+        db.commit()
 
     return doc

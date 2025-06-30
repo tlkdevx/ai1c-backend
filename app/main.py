@@ -8,8 +8,8 @@ from app.api.documents import router as doc_router
 from app.api.llm import router as llm_router
 from app.api.upload_cf import router as upload_cf_router
 from app.api.history import router as history_router
-from app.api.agent import router as agent_router       # Агент
-from app.api.search import router as search_router     # Поиск по embedding
+from app.api.agent import router as agent_router
+from app.api.search import router as search_router
 
 app = FastAPI(title="AI1C Backend")
 
@@ -21,7 +21,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_router, prefix="/api/v1/auth")
+# Не дублируй prefix, если он уже есть в самом роутере!
+app.include_router(auth_router)
 app.include_router(doc_router)
 app.include_router(llm_router)
 app.include_router(upload_cf_router)
