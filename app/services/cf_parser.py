@@ -28,7 +28,6 @@ TYPICAL_GROUPS = [
 
 def parse_cf_file(file_path: str):
     outdir = os.path.join(os.path.dirname(file_path), 'cf_unpack')
-    # Очищаем папку cf_unpack, если она уже есть
     if os.path.exists(outdir):
         for root, dirs, files in os.walk(outdir, topdown=False):
             for name in files:
@@ -47,6 +46,9 @@ def parse_cf_file(file_path: str):
     grouped = {g: {} for g in TYPICAL_GROUPS}
     grouped['Other'] = {}
 
+    stats = {g: 0 for g in TYPICAL_GROUPS}
+    stats['Other'] = 0
+
     for root, dirs, files in os.walk(outdir):
         rel_root = os.path.relpath(root, outdir)
         if rel_root == ".":
@@ -60,10 +62,26 @@ def parse_cf_file(file_path: str):
             node = node.setdefault(part, {})
         for f in files:
             node[f] = None
+            stats[group] += 1
 
-    # Добавим файлы из корня (версии, шапки, root)
     for f in os.listdir(outdir):
         if os.path.isfile(os.path.join(outdir, f)):
             grouped['Other'][f] = None
+            stats['Other'] += 1
 
-    return grouped
+    # Простейшая попытка определить версию платформы (если есть файл version.data)
+    version = None
+    version_path = os.path.join(outdir, "version.data")
+    if os.path.exists(version_path):
+        try:
+            with open(version_path, "rb") as vf:
+                v = vf.read()
+                version = str(v)
+        except Exception:
+            version = None
+
+    return {
+        "structure": grouped,
+        "stats": stats,
+        "version_guess": version
+    }
