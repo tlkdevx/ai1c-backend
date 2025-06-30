@@ -21,3 +21,9 @@ class Document(Base):
         back_populates="document",
         cascade="all, delete-orphan"
     )
+
+    knowledges  = relationship(
+        "Knowledge",
+        back_populates="document",
+        cascade="all, delete-orphan"
+    )
