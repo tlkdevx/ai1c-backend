@@ -2,7 +2,6 @@ import subprocess
 import os
 
 def parse_cf_file(file_path: str):
-    # Папка для распаковки рядом с файлом
     outdir = os.path.join(os.path.dirname(file_path), 'cf_unpack')
     # Очищаем папку cf_unpack, если она уже есть
     if os.path.exists(outdir):
@@ -18,9 +17,20 @@ def parse_cf_file(file_path: str):
         subprocess.run([exe_path, '--unpack', file_path, outdir], check=True, capture_output=True)
     except Exception as e:
         return {"error": f"Ошибка запуска v8unpack: {e}"}
-    result = {"objects": []}
-    for root, dirs, files in os.walk(outdir):
-        rel_root = os.path.relpath(root, outdir)
-        for name in files:
-            result["objects"].append({"type": "file", "path": os.path.join(rel_root, name)})
+
+    def build_tree(start_path):
+        tree = {}
+        for root, dirs, files in os.walk(start_path):
+            rel_path = os.path.relpath(root, start_path)
+            node = tree
+            if rel_path != ".":
+                for part in rel_path.split(os.sep):
+                    node = node.setdefault(part, {})
+            for d in dirs:
+                node[d] = {}
+            for f in files:
+                node[f] = None
+        return tree
+
+    result = build_tree(outdir)
     return result
