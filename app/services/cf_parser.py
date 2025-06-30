@@ -1,5 +1,6 @@
 import subprocess
 import os
+import struct
 
 TYPICAL_GROUPS = [
     "Catalogs",
@@ -69,19 +70,39 @@ def parse_cf_file(file_path: str):
             grouped['Other'][f] = None
             stats['Other'] += 1
 
-    # Простейшая попытка определить версию платформы (если есть файл version.data)
+    # --- Улучшенный разбор версии и имени ---
     version = None
+    config_name = None
     version_path = os.path.join(outdir, "version.data")
-    if os.path.exists(version_path):
-        try:
+    root_path = os.path.join(outdir, "root.data")
+    try:
+        # Версия (как строка)
+        if os.path.exists(version_path):
             with open(version_path, "rb") as vf:
-                v = vf.read()
-                version = str(v)
-        except Exception:
-            version = None
+                ver_bytes = vf.read()
+                # 1C версия платформы обычно в первых 4-8 байтах (raw или LE int)
+                if len(ver_bytes) >= 4:
+                    # Попробуем вывести как набор int/hex
+                    version = ".".join(str(b) for b in ver_bytes[:4])
+        # Имя конфигурации (root.data) — может содержать строку с именем
+        if os.path.exists(root_path):
+            with open(root_path, "rb") as rf:
+                content = rf.read(300)
+                try:
+                    decoded = content.decode("utf-8", errors="ignore")
+                    # Поиск первого читаемого слова как имя
+                    import re
+                    match = re.search(r"[\w\d\s\.\-\_]{3,}", decoded)
+                    if match:
+                        config_name = match.group(0).strip()
+                except Exception:
+                    pass
+    except Exception:
+        pass
 
     return {
         "structure": grouped,
         "stats": stats,
-        "version_guess": version
+        "version_guess": version,
+        "config_name_guess": config_name
     }
