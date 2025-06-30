@@ -1,17 +1,18 @@
 from pydantic_settings import BaseSettings
-from pydantic import AnyHttpUrl, SecretStr, PostgresDsn
 
 class Settings(BaseSettings):
-    secret_key: SecretStr
-    database_url: PostgresDsn
-    openai_api_key: SecretStr
-    deepseek_api_key: SecretStr
-    deepseek_api_base_url: AnyHttpUrl
-    deepseek_embedding_model: str
-    llm_model: str
-    jwt_secret: SecretStr
-    jwt_algorithm: str
-    frontend_url: AnyHttpUrl
+    secret_key: str
+    jwt_secret: str
+    jwt_algorithm: str = "HS256"
+    database_url: str
+
+    # DeepSeek API
+    deepseek_api_key: str
+    deepseek_api_base_url: str = "https://api.deepseek.com"
+    deepseek_embedding_model: str = "deepseek-embedding"
+    llm_model: str = "deepseek-chat"
+
+    frontend_url: str = "http://localhost:3000"
 
     class Config:
         env_file = ".env"

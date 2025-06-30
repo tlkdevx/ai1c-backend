@@ -1,5 +1,3 @@
-# app/db/models/user.py
-
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from app.db.base import Base
@@ -12,9 +10,16 @@ class User(Base):
     full_name       = Column(String, nullable=False)
     hashed_password = Column(String, nullable=False)
 
-    # Добавляем связь к документам
+    # Связь с документами
     documents = relationship(
         "Document",
         back_populates="owner",
         cascade="all, delete-orphan"
     )
+
+    # Связь с историей — ВРЕМЕННО убираем, чтобы сервер запустился!
+    # history = relationship(
+    #     "History",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan"
+    # )
