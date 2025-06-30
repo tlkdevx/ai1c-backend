@@ -1,7 +1,6 @@
 from pydantic_settings import BaseSettings
 from pydantic import AnyHttpUrl, SecretStr, PostgresDsn
 
-
 class Settings(BaseSettings):
     secret_key: SecretStr
     database_url: PostgresDsn
@@ -17,6 +16,5 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
-
 
 settings = Settings()

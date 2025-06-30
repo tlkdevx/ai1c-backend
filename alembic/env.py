@@ -14,7 +14,8 @@ config = context.config
 # config.set_main_option("sqlalchemy.url", settings.database_url)
 
 # Однако, чтобы брать из .env вместо alembic.ini, раскомментируйте:
-config.set_main_option("sqlalchemy.url", settings.database_url)
+config.set_main_option("sqlalchemy.url", str(settings.database_url))
+
 
 # this line sets up loggers basically.
 fileConfig(config.config_file_name)
