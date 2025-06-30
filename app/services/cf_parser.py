@@ -1,6 +1,31 @@
 import subprocess
 import os
 
+TYPICAL_GROUPS = [
+    "Catalogs",
+    "Documents",
+    "CommonModules",
+    "Subsystems",
+    "Constants",
+    "DocumentJournals",
+    "Enums",
+    "BusinessProcesses",
+    "Tasks",
+    "InformationRegisters",
+    "AccumulationRegisters",
+    "ChartOfAccounts",
+    "ChartOfCalculationTypes",
+    "ExchangePlans",
+    "EventSubscriptions",
+    "ScheduledJobs",
+    "Reports",
+    "DataProcessors",
+    "Settings",
+    "Roles",
+    "Templates",
+    "Languages"
+]
+
 def parse_cf_file(file_path: str):
     outdir = os.path.join(os.path.dirname(file_path), 'cf_unpack')
     # Очищаем папку cf_unpack, если она уже есть
@@ -18,19 +43,27 @@ def parse_cf_file(file_path: str):
     except Exception as e:
         return {"error": f"Ошибка запуска v8unpack: {e}"}
 
-    def build_tree(start_path):
-        tree = {}
-        for root, dirs, files in os.walk(start_path):
-            rel_path = os.path.relpath(root, start_path)
-            node = tree
-            if rel_path != ".":
-                for part in rel_path.split(os.sep):
-                    node = node.setdefault(part, {})
-            for d in dirs:
-                node[d] = {}
-            for f in files:
-                node[f] = None
-        return tree
+    # Группировка файлов по типу
+    grouped = {g: {} for g in TYPICAL_GROUPS}
+    grouped['Other'] = {}
 
-    result = build_tree(outdir)
-    return result
+    for root, dirs, files in os.walk(outdir):
+        rel_root = os.path.relpath(root, outdir)
+        if rel_root == ".":
+            continue
+        group = rel_root.split(os.sep)[0]
+        if group not in grouped:
+            group = "Other"
+        node = grouped[group]
+        parts = rel_root.split(os.sep)[1:]
+        for part in parts:
+            node = node.setdefault(part, {})
+        for f in files:
+            node[f] = None
+
+    # Добавим файлы из корня (версии, шапки, root)
+    for f in os.listdir(outdir):
+        if os.path.isfile(os.path.join(outdir, f)):
+            grouped['Other'][f] = None
+
+    return grouped
